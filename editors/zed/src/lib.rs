@@ -13,7 +13,7 @@ use zed_extension_api::{
 };
 
 const SERVER_BIN: &str = "ansible-lens-lsp";
-const REPO: &str = "krueger-jan/ansible-lens";
+const REPO: &str = "jan-krueger/ansible-lens";
 
 #[derive(Default)]
 struct AnsibleLensExtension {

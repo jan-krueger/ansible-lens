@@ -166,7 +166,7 @@ templates need extra setup is that **Zed attaches a language server by
 Once published to the Zed registry, install **Ansible Lens** from
 Zed → Extensions. On first use it downloads the prebuilt
 `ansible-lens-lsp` binary for your platform from
-[GitHub Releases](https://github.com/krueger-jan/ansible-lens/releases) —
+[GitHub Releases](https://github.com/jan-krueger/ansible-lens/releases) —
 no Rust toolchain required.
 
 To override the downloaded copy (for development, or an unsupported platform),
