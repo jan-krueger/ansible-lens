@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+staged="$(git diff --cached --name-only --diff-filter=ACM)"
+
+echo "[pre-commit] make fmt"
+make fmt
+
+# Re-stage anything the formatter touched so the commit is formatted.
+if [ -n "$staged" ]; then
+  printf '%s\n' "$staged" | xargs git add --
+fi

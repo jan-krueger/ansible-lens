@@ -4,3 +4,6 @@
 
 # refactor: apply rustfmt
 6350e8eb2c0f87b349e969564082fd5fb27f44d1
+
+# refactor: format Python test scripts with ruff
+9657e018e73e99c08809e70e456569ea210dca94

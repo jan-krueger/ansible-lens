@@ -8,8 +8,8 @@
 use std::fs;
 
 use zed_extension_api::{
-    self as zed, Architecture, Command, DownloadedFileType, GithubReleaseOptions,
-    LanguageServerId, LanguageServerInstallationStatus, Os, Result, Worktree,
+    self as zed, Architecture, Command, DownloadedFileType, GithubReleaseOptions, LanguageServerId,
+    LanguageServerInstallationStatus, Os, Result, Worktree,
 };
 
 const SERVER_BIN: &str = "ansible-lens-lsp";
@@ -73,7 +73,10 @@ fn download_server(language_server_id: &LanguageServerId) -> Result<String> {
 
     let release = match zed::latest_github_release(
         REPO,
-        GithubReleaseOptions { require_assets: true, pre_release: false },
+        GithubReleaseOptions {
+            require_assets: true,
+            pre_release: false,
+        },
     ) {
         Ok(release) => release,
         Err(err) => {
@@ -86,7 +89,12 @@ fn download_server(language_server_id: &LanguageServerId) -> Result<String> {
         .assets
         .iter()
         .find(|a| a.name == asset_name)
-        .ok_or_else(|| format!("no release asset `{asset_name}` in {REPO} {}", release.version))?;
+        .ok_or_else(|| {
+            format!(
+                "no release asset `{asset_name}` in {REPO} {}",
+                release.version
+            )
+        })?;
 
     let version_dir = format!("{SERVER_BIN}-{}", release.version);
     let binary_path = format!("{version_dir}/{binary_name}");
