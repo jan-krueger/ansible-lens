@@ -12,9 +12,9 @@ use std::path::{Path, PathBuf};
 use tower_lsp::lsp_types::{Location, Range, Url};
 use walkdir::WalkDir;
 
-use crate::flatten::{parse_document, DefKind, FlatVar};
-use crate::jinja::{usages_in_line, GlobSeg};
-use crate::precedence::{has_yaml_ext, VarSource};
+use crate::flatten::{DefKind, FlatVar, parse_document};
+use crate::jinja::{GlobSeg, usages_in_line};
+use crate::precedence::{VarSource, has_yaml_ext};
 
 fn kind_source(kind: DefKind) -> VarSource {
     match kind {
@@ -158,13 +158,14 @@ impl VarIndex {
             if !usages.is_empty() {
                 for u in &usages {
                     if let Some(GlobSeg::Lit(root)) = u.pattern.first() {
-                        self.usages_by_root.entry(root.clone()).or_default().push(
-                            UsageRef {
+                        self.usages_by_root
+                            .entry(root.clone())
+                            .or_default()
+                            .push(UsageRef {
                                 uri: uri.clone(),
                                 pattern: u.pattern.clone(),
                                 range: u.range,
-                            },
-                        );
+                            });
                     }
                 }
                 self.file_usages.insert(uri, usages);
@@ -247,8 +248,13 @@ impl VarIndex {
             .range(partial.to_string()..)
             .take_while(|(seg, _)| seg.starts_with(partial))
             .map(|(seg, child)| {
-                let mut sources: Vec<VarSource> =
-                    child.defs.iter().map(|d| d.source).collect::<HashSet<_>>().into_iter().collect();
+                let mut sources: Vec<VarSource> = child
+                    .defs
+                    .iter()
+                    .map(|d| d.source)
+                    .collect::<HashSet<_>>()
+                    .into_iter()
+                    .collect();
                 sources.sort_by(|a, b| b.precedence().cmp(&a.precedence()));
                 Completion {
                     full_path: prefixed(prefix, seg),
@@ -362,7 +368,9 @@ fn is_usage_candidate(path: &Path) -> bool {
 fn is_pruned_dir(path: &Path) -> bool {
     matches!(
         path.file_name().and_then(|n| n.to_str()),
-        Some(".git" | ".svn" | ".hg" | "node_modules" | ".venv" | "venv" | "__pycache__" | "target")
+        Some(
+            ".git" | ".svn" | ".hg" | "node_modules" | ".venv" | "venv" | "__pycache__" | "target"
+        )
     )
 }
 
@@ -394,11 +402,14 @@ mod tests {
         fn add_usage(&mut self, uri: &str, segs: &[GlobSeg]) {
             let uri = Url::parse(uri).unwrap();
             if let Some(GlobSeg::Lit(root)) = segs.first() {
-                self.usages_by_root.entry(root.clone()).or_default().push(UsageRef {
-                    uri,
-                    pattern: segs.to_vec(),
-                    range: rng(),
-                });
+                self.usages_by_root
+                    .entry(root.clone())
+                    .or_default()
+                    .push(UsageRef {
+                        uri,
+                        pattern: segs.to_vec(),
+                        range: rng(),
+                    });
             }
         }
     }
@@ -410,9 +421,21 @@ mod tests {
     #[test]
     fn lookup_orders_by_precedence_winner_first() {
         let mut index = VarIndex::default();
-        index.add_def("file:///defaults.yml", "app.db.password", VarSource::RoleDefaults);
-        index.add_def("file:///hostvars.yml", "app.db.password", VarSource::HostVars);
-        index.add_def("file:///groupvars.yml", "app.db.password", VarSource::GroupVars);
+        index.add_def(
+            "file:///defaults.yml",
+            "app.db.password",
+            VarSource::RoleDefaults,
+        );
+        index.add_def(
+            "file:///hostvars.yml",
+            "app.db.password",
+            VarSource::HostVars,
+        );
+        index.add_def(
+            "file:///groupvars.yml",
+            "app.db.password",
+            VarSource::GroupVars,
+        );
 
         let order: Vec<_> = index
             .lookup("app.db.password")
@@ -421,7 +444,11 @@ mod tests {
             .collect();
         assert_eq!(
             order,
-            vec![VarSource::HostVars, VarSource::GroupVars, VarSource::RoleDefaults]
+            vec![
+                VarSource::HostVars,
+                VarSource::GroupVars,
+                VarSource::RoleDefaults
+            ]
         );
     }
 
@@ -433,9 +460,21 @@ mod tests {
     #[test]
     fn glob_lookup_branches_on_wild() {
         let mut index = VarIndex::default();
-        index.add_def("file:///v.yml", "data.servers.prod.address", VarSource::GroupVars);
-        index.add_def("file:///v.yml", "data.servers.staging.address", VarSource::GroupVars);
-        index.add_def("file:///v.yml", "data.servers.prod.other", VarSource::GroupVars);
+        index.add_def(
+            "file:///v.yml",
+            "data.servers.prod.address",
+            VarSource::GroupVars,
+        );
+        index.add_def(
+            "file:///v.yml",
+            "data.servers.staging.address",
+            VarSource::GroupVars,
+        );
+        index.add_def(
+            "file:///v.yml",
+            "data.servers.prod.other",
+            VarSource::GroupVars,
+        );
 
         let pattern = vec![lit("data"), lit("servers"), GlobSeg::Wild, lit("address")];
         assert_eq!(index.lookup_glob(&pattern).len(), 2);
@@ -444,7 +483,12 @@ mod tests {
     #[test]
     fn completion_offers_children_and_marks_dicts() {
         let mut index = VarIndex::default();
-        for key in ["app.install_dir", "app.bind_host", "app.keycloak.realm", "region"] {
+        for key in [
+            "app.install_dir",
+            "app.bind_host",
+            "app.keycloak.realm",
+            "region",
+        ] {
             index.add_def("file:///g.yml", key, VarSource::GroupVars);
         }
 
@@ -475,7 +519,10 @@ mod tests {
         let mut index = VarIndex::default();
         index.add_usage("file:///t", &[lit("app"), lit("install_dir")]);
         index.add_usage("file:///t", &[lit("app"), lit("bind_host")]);
-        index.add_usage("file:///t", &[lit("data"), lit("servers"), GlobSeg::Wild, lit("address")]);
+        index.add_usage(
+            "file:///t",
+            &[lit("data"), lit("servers"), GlobSeg::Wild, lit("address")],
+        );
         index.add_usage("file:///t", &[lit("unrelated")]);
 
         assert_eq!(index.find_references("app.install_dir").len(), 1);
@@ -496,7 +543,11 @@ mod tests {
         assert!(index.lookup("console_ui.bind_host").is_empty());
         assert_eq!(index.lookup("console_ui.install_dir").len(), 1);
         // completion no longer offers the pruned child
-        let members: Vec<_> = index.complete(&["console_ui"], "").into_iter().map(|c| c.segment).collect();
+        let members: Vec<_> = index
+            .complete(&["console_ui"], "")
+            .into_iter()
+            .map(|c| c.segment)
+            .collect();
         assert_eq!(members, vec!["install_dir".to_string()]);
     }
 }

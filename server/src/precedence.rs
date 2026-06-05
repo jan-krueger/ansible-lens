@@ -130,10 +130,19 @@ mod tests {
 
     #[test]
     fn recognises_each_source() {
-        assert_eq!(classify("group_vars/all.yml"), Some(VarSource::GroupVarsAll));
-        assert_eq!(classify("group_vars/all/x.yml"), Some(VarSource::GroupVarsAll));
+        assert_eq!(
+            classify("group_vars/all.yml"),
+            Some(VarSource::GroupVarsAll)
+        );
+        assert_eq!(
+            classify("group_vars/all/x.yml"),
+            Some(VarSource::GroupVarsAll)
+        );
         assert_eq!(classify("group_vars/db.yml"), Some(VarSource::GroupVars));
-        assert_eq!(classify("group_vars/db/main.yaml"), Some(VarSource::GroupVars));
+        assert_eq!(
+            classify("group_vars/db/main.yaml"),
+            Some(VarSource::GroupVars)
+        );
         assert_eq!(classify("host_vars/web1.yml"), Some(VarSource::HostVars));
         assert_eq!(
             classify("roles/myrole/defaults/main.yml"),

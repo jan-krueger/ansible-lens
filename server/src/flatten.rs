@@ -5,7 +5,7 @@
 use std::borrow::Cow;
 
 use marked_yaml::types::MarkedScalarNode;
-use marked_yaml::{parse_yaml, parse_yaml_with_options, LoaderOptions, Node};
+use marked_yaml::{LoaderOptions, Node, parse_yaml, parse_yaml_with_options};
 use tower_lsp::lsp_types::{Position, Range};
 
 /// Value of an Ansible-Vault-encrypted leaf, so callers flag it instead of
@@ -16,7 +16,10 @@ pub const VAULT_ENCRYPTED: &str = "\0vault-encrypted";
 /// with equal-length spaces (preserving every position) before parsing.
 fn strip_ansible_tags(content: &str) -> Cow<'_, str> {
     if content.contains("!vault") || content.contains("!unsafe") {
-        Cow::Owned(blank_yaml_tag(&blank_yaml_tag(content, "!vault"), "!unsafe"))
+        Cow::Owned(blank_yaml_tag(
+            &blank_yaml_tag(content, "!vault"),
+            "!unsafe",
+        ))
     } else {
         Cow::Borrowed(content)
     }
@@ -30,7 +33,10 @@ fn blank_yaml_tag(content: &str, tag: &str) -> String {
     let mut rest = content;
     while let Some(pos) = rest.find(tag) {
         let (before, after) = (&rest[..pos], &rest[pos + tag.len()..]);
-        let is_tag = before.chars().last().is_none_or(|c| c.is_whitespace() || c == '-')
+        let is_tag = before
+            .chars()
+            .last()
+            .is_none_or(|c| c.is_whitespace() || c == '-')
             && after.chars().next().is_none_or(char::is_whitespace);
         out.push_str(before);
         out.push_str(if is_tag { blanks.as_str() } else { tag });
@@ -120,7 +126,11 @@ fn walk_inline(node: &Node, out: &mut Vec<(DefKind, FlatVar)>) {
             for (key, value) in map.iter() {
                 match key.as_str() {
                     "set_fact" | "ansible.builtin.set_fact" => {
-                        out.extend(flatten_node(value).into_iter().map(|v| (DefKind::SetFact, v)));
+                        out.extend(
+                            flatten_node(value)
+                                .into_iter()
+                                .map(|v| (DefKind::SetFact, v)),
+                        );
                     }
                     "vars" => {
                         out.extend(flatten_node(value).into_iter().map(|v| (DefKind::Vars, v)));
@@ -249,7 +259,10 @@ vault:
 ";
         let vars = flatten(yaml);
         assert!(vars.iter().any(|v| v.dotted == "vault"));
-        assert!(vars.iter().any(|v| v.dotted == "vault.cpsd.int.db_password"));
+        assert!(
+            vars.iter()
+                .any(|v| v.dotted == "vault.cpsd.int.db_password")
+        );
         assert!(vars.iter().any(|v| v.dotted == "vault.cpsd.int.api_key"));
         // the encrypted value is marked as such, not stored as raw ciphertext
         let pw = find(&vars, "vault.cpsd.int.db_password");
@@ -269,7 +282,8 @@ vault:
     fn vault_tag_only_stripped_as_a_whole_token() {
         // `!vault` as a real tag is stripped; the same text glued to other chars
         // (so not a standalone token) is left intact.
-        let yaml = "note: \"see the !vaultish note\"\npw: !vault |\n  $ANSIBLE_VAULT;1.1;AES256\n  abcd\n";
+        let yaml =
+            "note: \"see the !vaultish note\"\npw: !vault |\n  $ANSIBLE_VAULT;1.1;AES256\n  abcd\n";
         let vars = flatten(yaml);
         let note = find(&vars, "note");
         assert_eq!(note.value.as_deref(), Some("see the !vaultish note"));

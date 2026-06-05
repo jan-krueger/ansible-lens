@@ -153,7 +153,9 @@ pub fn usages_in_line(line: &str, line_no: u32) -> Vec<(Vec<GlobSeg>, Range)> {
 
     let mut out = Vec::new();
     for chain in scan_chains(&chars) {
-        let inside = spans.iter().any(|&(s, e)| chain.start >= s && chain.start < e);
+        let inside = spans
+            .iter()
+            .any(|&(s, e)| chain.start >= s && chain.start < e);
         if !inside {
             continue;
         }
@@ -186,11 +188,16 @@ pub fn undefined_candidates(line: &str, line_no: u32) -> Vec<(String, Range)> {
 
     let mut out = Vec::new();
     for chain in scan_chains(&chars) {
-        let inside = spans.iter().any(|&(s, e)| chain.start >= s && chain.start < e);
+        let inside = spans
+            .iter()
+            .any(|&(s, e)| chain.start >= s && chain.start < e);
         if !inside {
             continue;
         }
-        if strings.iter().any(|&(s, e)| chain.start >= s && chain.start < e) {
+        if strings
+            .iter()
+            .any(|&(s, e)| chain.start >= s && chain.start < e)
+        {
             continue; // inside a quoted string literal
         }
         let Some(GlobSeg::Lit(root)) = chain.segs.first() else {
@@ -548,14 +555,20 @@ mod tests {
     #[test]
     fn undefined_candidates_excludes_filters_and_calls() {
         let roots = |line: &str| -> Vec<String> {
-            undefined_candidates(line, 0).into_iter().map(|(r, _)| r).collect()
+            undefined_candidates(line, 0)
+                .into_iter()
+                .map(|(r, _)| r)
+                .collect()
         };
         // a plain variable is a candidate
         assert_eq!(roots("x: \"{{ my_var }}\""), vec!["my_var"]);
         // filter name after `|` is excluded; the variable before it is kept
         assert_eq!(roots("x: \"{{ my_var | default('z') }}\""), vec!["my_var"]);
         // function/method calls are excluded
-        assert_eq!(roots("x: \"{{ lookup('env', 'X') }}\""), Vec::<String>::new());
+        assert_eq!(
+            roots("x: \"{{ lookup('env', 'X') }}\""),
+            Vec::<String>::new()
+        );
         assert_eq!(roots("x: \"{{ foo.bar() }}\""), Vec::<String>::new());
         // outside Jinja delimiters: nothing
         assert_eq!(roots("just: plain.text.here"), Vec::<String>::new());

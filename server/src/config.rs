@@ -5,9 +5,9 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
+use marked_yaml::Node;
 use marked_yaml::parse_yaml;
 use marked_yaml::types::MarkedMappingNode;
-use marked_yaml::Node;
 use walkdir::WalkDir;
 
 #[derive(Default)]
@@ -43,8 +43,7 @@ impl AnsibleConfig {
                 .filter_map(Result::ok)
             {
                 let path = entry.path();
-                if entry.file_type().is_file() && path.file_name() == Some("ansible.cfg".as_ref())
-                {
+                if entry.file_type().is_file() && path.file_name() == Some("ansible.cfg".as_ref()) {
                     merge |= parse_hash_behaviour_merge(path);
                 }
                 // An inventory root is the parent of a `group_vars`/`host_vars` dir.
@@ -221,7 +220,11 @@ fn depth(
     }
     let d = match parents.get(group) {
         Some(ps) if !ps.is_empty() => {
-            1 + ps.iter().map(|p| depth(p, parents, memo, visiting)).max().unwrap_or(0)
+            1 + ps
+                .iter()
+                .map(|p| depth(p, parents, memo, visiting))
+                .max()
+                .unwrap_or(0)
         }
         _ => 1,
     };

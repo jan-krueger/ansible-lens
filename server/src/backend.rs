@@ -3,8 +3,8 @@
 
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use tokio::sync::RwLock;
@@ -13,12 +13,12 @@ use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};
 
 use crate::config::AnsibleConfig;
-use crate::flatten::{key_path_at, parse_document, VAULT_ENCRYPTED};
+use crate::flatten::{VAULT_ENCRYPTED, key_path_at, parse_document};
 use crate::index::{Completion, Definition, VarIndex};
 use crate::jinja::{
-    cursor_in_expr, extract_query, jinja_scope_vars, leading_literals, undefined_candidates, Query,
+    Query, cursor_in_expr, extract_query, jinja_scope_vars, leading_literals, undefined_candidates,
 };
-use crate::precedence::{path_components, strip_yaml_ext, VarSource};
+use crate::precedence::{VarSource, path_components, strip_yaml_ext};
 
 pub struct Backend {
     client: Client,
@@ -88,7 +88,10 @@ impl Backend {
         };
         if let Err(err) = self.client.register_capability(vec![registration]).await {
             self.client
-                .log_message(MessageType::WARNING, format!("file watch unavailable: {err}"))
+                .log_message(
+                    MessageType::WARNING,
+                    format!("file watch unavailable: {err}"),
+                )
                 .await;
         }
     }
@@ -150,7 +153,8 @@ impl Backend {
 impl LanguageServer for Backend {
     async fn initialize(&self, params: InitializeParams) -> RpcResult<InitializeResult> {
         *self.roots.write().await = collect_roots(&params);
-        self.watch_files.store(supports_file_watching(&params), Ordering::Relaxed);
+        self.watch_files
+            .store(supports_file_watching(&params), Ordering::Relaxed);
         // Opt out with initializationOptions: { "diagnostics": false }.
         let diagnostics_on = params
             .initialization_options
@@ -256,7 +260,8 @@ impl LanguageServer for Backend {
         }
         if reload_config {
             let roots = self.roots.read().await.clone();
-            if let Ok(cfg) = tokio::task::spawn_blocking(move || AnsibleConfig::load(&roots)).await {
+            if let Ok(cfg) = tokio::task::spawn_blocking(move || AnsibleConfig::load(&roots)).await
+            {
                 *self.config.write().await = cfg;
             }
         }
@@ -279,7 +284,10 @@ impl LanguageServer for Backend {
         let uri = params.text_document.uri;
         // Store the new text immediately so live queries see it; defer the
         // (workspace-global) reindex until typing pauses.
-        self.docs.write().await.insert(uri.clone(), change.text.clone());
+        self.docs
+            .write()
+            .await
+            .insert(uri.clone(), change.text.clone());
         self.schedule_reindex(uri, change.text).await;
     }
 
@@ -401,10 +409,7 @@ impl LanguageServer for Backend {
         }))
     }
 
-    async fn completion(
-        &self,
-        params: CompletionParams,
-    ) -> RpcResult<Option<CompletionResponse>> {
+    async fn completion(&self, params: CompletionParams) -> RpcResult<Option<CompletionResponse>> {
         let pos = params.text_document_position.position;
         let uri = params.text_document_position.text_document.uri;
 
@@ -472,7 +477,9 @@ fn compute_diagnostics(content: &str, index: &VarIndex) -> Vec<Diagnostic> {
                 range,
                 severity: Some(DiagnosticSeverity::WARNING),
                 source: Some("ansible-lens".into()),
-                message: format!("Undefined variable `{root}` — no definition found in the workspace"),
+                message: format!(
+                    "Undefined variable `{root}` — no definition found in the workspace"
+                ),
                 ..Default::default()
             });
         }
@@ -489,19 +496,85 @@ fn root_of(dotted: &str) -> String {
 /// covered by a prefix check in [`is_dynamic_var`].
 const DYNAMIC_VARS: &[&str] = &[
     // Jinja keywords / operators / constants / block tags
-    "if", "else", "elif", "endif", "for", "endfor", "in", "is", "not", "and", "or",
-    "true", "false", "none", "True", "False", "None", "set", "endset", "macro",
-    "endmacro", "call", "endcall", "filter", "endfilter", "block", "endblock", "with",
-    "endwith", "raw", "endraw", "include", "import", "from", "extends", "do",
+    "if",
+    "else",
+    "elif",
+    "endif",
+    "for",
+    "endfor",
+    "in",
+    "is",
+    "not",
+    "and",
+    "or",
+    "true",
+    "false",
+    "none",
+    "True",
+    "False",
+    "None",
+    "set",
+    "endset",
+    "macro",
+    "endmacro",
+    "call",
+    "endcall",
+    "filter",
+    "endfilter",
+    "block",
+    "endblock",
+    "with",
+    "endwith",
+    "raw",
+    "endraw",
+    "include",
+    "import",
+    "from",
+    "extends",
+    "do",
     // Jinja tests (used bare after `is`)
-    "defined", "undefined", "mapping", "sequence", "iterable", "string", "number",
-    "boolean", "integer", "float", "sameas", "even", "odd", "divisibleby", "callable",
+    "defined",
+    "undefined",
+    "mapping",
+    "sequence",
+    "iterable",
+    "string",
+    "number",
+    "boolean",
+    "integer",
+    "float",
+    "sameas",
+    "even",
+    "odd",
+    "divisibleby",
+    "callable",
     // Jinja globals / functions
-    "range", "dict", "lipsum", "cycler", "joiner", "namespace", "lookup", "query", "q",
+    "range",
+    "dict",
+    "lipsum",
+    "cycler",
+    "joiner",
+    "namespace",
+    "lookup",
+    "query",
+    "q",
     // Ansible magic vars
-    "item", "loop", "omit", "hostvars", "vars", "groups", "group_names",
-    "inventory_hostname", "inventory_hostname_short", "play_hosts", "inventory_dir",
-    "inventory_file", "playbook_dir", "role_path", "role_name", "role_names",
+    "item",
+    "loop",
+    "omit",
+    "hostvars",
+    "vars",
+    "groups",
+    "group_names",
+    "inventory_hostname",
+    "inventory_hostname_short",
+    "play_hosts",
+    "inventory_dir",
+    "inventory_file",
+    "playbook_dir",
+    "role_path",
+    "role_name",
+    "role_names",
     "environment",
 ];
 
@@ -517,8 +590,7 @@ fn is_dynamic_var(root: &str) -> bool {
 /// `FOO_BAR`, `RELEASE` — has letters, all uppercase. By strong convention
 /// these are externally-provided (extra-vars / constants), not file-defined.
 fn is_screaming_case(root: &str) -> bool {
-    root.chars().any(|c| c.is_alphabetic())
-        && !root.chars().any(|c| c.is_lowercase())
+    root.chars().any(|c| c.is_alphabetic()) && !root.chars().any(|c| c.is_lowercase())
 }
 
 fn supports_file_watching(params: &InitializeParams) -> bool {
@@ -602,8 +674,7 @@ fn completion_item(c: Completion, edit_range: Range) -> CompletionItem {
             value: doc,
         })),
         text_edit: Some(CompletionTextEdit::Edit(TextEdit::new(
-            edit_range,
-            c.segment,
+            edit_range, c.segment,
         ))),
         ..Default::default()
     }
@@ -641,7 +712,11 @@ fn resolve_target(uri: &Url, text: &str, pos: Position) -> Option<String> {
 
 /// All-sites hover: a table of every definition, the value linking to its source.
 fn render_table(target: &str, defs: &[Definition], config: &AnsibleConfig) -> String {
-    let mut out = format!("**`{target}`** · _{}_ · {} sites\n\n", value_type(defs), defs.len());
+    let mut out = format!(
+        "**`{target}`** · _{}_ · {} sites\n\n",
+        value_type(defs),
+        defs.len()
+    );
     out.push_str("| Inventory | Tier | Value (→ source) |\n|---|---|---|\n");
     for d in defs {
         out.push_str(&format!(
@@ -800,8 +875,8 @@ fn contextual_rank(d: &Definition, inv: &str, host: &str, config: &AnsibleConfig
                 .map(|(_, depth)| 30 + *depth as u32)
         }
         HostVars => {
-            let on_host = d.inventory.as_deref() == Some(inv)
-                && scope_label(&d.uri).as_deref() == Some(host);
+            let on_host =
+                d.inventory.as_deref() == Some(inv) && scope_label(&d.uri).as_deref() == Some(host);
             on_host.then_some(48)
         }
         PlayVars => Some(50),
