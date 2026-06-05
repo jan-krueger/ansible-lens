@@ -47,13 +47,12 @@ impl AnsibleConfig {
                     merge |= parse_hash_behaviour_merge(path);
                 }
                 // An inventory root is the parent of a `group_vars`/`host_vars` dir.
-                if entry.file_type().is_dir() {
-                    if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                        if (name == "group_vars" || name == "host_vars") && path.parent().is_some()
-                        {
-                            inventory_roots.insert(path.parent().unwrap().to_path_buf());
-                        }
-                    }
+                if entry.file_type().is_dir()
+                    && let Some(name) = path.file_name().and_then(|n| n.to_str())
+                    && (name == "group_vars" || name == "host_vars")
+                    && let Some(parent) = path.parent()
+                {
+                    inventory_roots.insert(parent.to_path_buf());
                 }
             }
         }
@@ -145,12 +144,10 @@ fn parse_hash_behaviour_merge(path: &Path) -> bool {
         let line = line.trim();
         if let Some(section) = line.strip_prefix('[') {
             in_defaults = section.trim_end_matches(']').trim() == "defaults";
-        } else if in_defaults {
-            if let Some((k, v)) = line.split_once('=') {
-                let k = k.trim();
-                if k == "hash_behaviour" || k == "hash_behavior" {
-                    return v.trim() == "merge";
-                }
+        } else if in_defaults && let Some((k, v)) = line.split_once('=') {
+            let k = k.trim();
+            if k == "hash_behaviour" || k == "hash_behavior" {
+                return v.trim() == "merge";
             }
         }
     }
@@ -169,11 +166,11 @@ fn find_hosts_file(root: &Path) -> Option<PathBuf> {
 /// form. (INI inventories aren't parsed yet — they yield an empty map.)
 fn parse_yaml_inventory(content: &str) -> HashMap<String, Group> {
     let mut groups = HashMap::new();
-    if let Ok(root) = parse_yaml(0, content) {
-        if let Some(map) = root.as_mapping() {
-            for (name, body) in map.iter() {
-                collect_group(name.as_str(), body, &mut groups);
-            }
+    if let Ok(root) = parse_yaml(0, content)
+        && let Some(map) = root.as_mapping()
+    {
+        for (name, body) in map.iter() {
+            collect_group(name.as_str(), body, &mut groups);
         }
     }
     groups

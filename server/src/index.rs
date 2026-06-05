@@ -183,12 +183,12 @@ impl VarIndex {
         }
         if let Some(usages) = self.file_usages.remove(uri) {
             for u in usages {
-                if let Some(GlobSeg::Lit(root)) = u.pattern.first() {
-                    if let Some(bucket) = self.usages_by_root.get_mut(root) {
-                        bucket.retain(|r| &r.uri != uri);
-                        if bucket.is_empty() {
-                            self.usages_by_root.remove(root);
-                        }
+                if let Some(GlobSeg::Lit(root)) = u.pattern.first()
+                    && let Some(bucket) = self.usages_by_root.get_mut(root)
+                {
+                    bucket.retain(|r| &r.uri != uri);
+                    if bucket.is_empty() {
+                        self.usages_by_root.remove(root);
                     }
                 }
             }
@@ -255,7 +255,7 @@ impl VarIndex {
                     .collect::<HashSet<_>>()
                     .into_iter()
                     .collect();
-                sources.sort_by(|a, b| b.precedence().cmp(&a.precedence()));
+                sources.sort_by_key(|s| std::cmp::Reverse(s.precedence()));
                 Completion {
                     full_path: prefixed(prefix, seg),
                     segment: seg.clone(),
@@ -300,10 +300,10 @@ fn remove_def_at(node: &mut DefNode, segs: &[&str], idx: usize, uri: &Url) -> bo
     match segs.get(idx) {
         None => node.defs.retain(|d| &d.uri != uri),
         Some(seg) => {
-            if let Some(child) = node.children.get_mut(*seg) {
-                if remove_def_at(child, segs, idx + 1, uri) {
-                    node.children.remove(*seg);
-                }
+            if let Some(child) = node.children.get_mut(*seg)
+                && remove_def_at(child, segs, idx + 1, uri)
+            {
+                node.children.remove(*seg);
             }
         }
     }

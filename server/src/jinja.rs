@@ -91,14 +91,14 @@ pub fn extract_path_at(line: &str, character: usize) -> Option<String> {
 /// Index of the first "real" segment after stripping a leading magic var and
 /// its dynamic index (`hostvars[host]...` -> the path after `[host]`).
 fn magic_strip_index(segs: &[GlobSeg]) -> usize {
-    if let Some(GlobSeg::Lit(first)) = segs.first() {
-        if MAGIC_PREFIXES.contains(&first.to_ascii_lowercase().as_str()) {
-            let mut idx = 1;
-            if let Some(GlobSeg::Wild) = segs.get(idx) {
-                idx += 1;
-            }
-            return idx;
+    if let Some(GlobSeg::Lit(first)) = segs.first()
+        && MAGIC_PREFIXES.contains(&first.to_ascii_lowercase().as_str())
+    {
+        let mut idx = 1;
+        if let Some(GlobSeg::Wild) = segs.get(idx) {
+            idx += 1;
         }
+        return idx;
     }
     0
 }
