@@ -1,6 +1,6 @@
 [package]
 name = "ansible-lens-lsp"
-version = "0.1.0"
+version = "0.2.2"
 edition = "2024"
 description = "Language Server providing Go-to-Definition for nested Ansible/Jinja2 variables"
 license = "GPL-3.0-only"

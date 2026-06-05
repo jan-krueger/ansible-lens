@@ -1,15 +1,11 @@
 id = "ansible-lens"
 name = "Ansible Lens"
-version = "0.1.0"
+version = "0.2.2"
 schema_version = 1
 authors = ["Jan Krüger <jan@krueger-jan.de>"]
 description = "Go to Definition for nested Ansible/Jinja2 variables"
 repository = "https://github.com/jan-krueger/ansible-lens"
 
-# Attach to YAML, plus the "Ansible" and "Jinja2" languages when those
-# community extensions are installed. Templates with non-standard extensions
-# can be routed to any of these via a `file_types` glob in your Zed settings
-# (see the README).
 [language_servers.ansible-lens]
 name = "Ansible Lens"
 languages = ["YAML", "Ansible", "Jinja2"]
