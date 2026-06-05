@@ -118,8 +118,7 @@ pub enum DefKind {
     Loop,
 }
 
-/// Walk the tree collecting `set_fact:` / `vars:` / `register:` / `loop_var:`
-/// definitions (see [`Document::inline_defs`]).
+/// Recursive worker for [`Document::inline_defs`].
 fn walk_inline(node: &Node, out: &mut Vec<(DefKind, FlatVar)>) {
     match node {
         Node::Mapping(map) => {
@@ -226,7 +225,6 @@ mod tests {
         let yaml = "percona:\n  administration:\n    password: \"secret_vault_string\"\n";
         let vars = flatten(yaml);
 
-        // Every level is emitted.
         assert!(vars.iter().any(|v| v.dotted == "percona"));
         assert!(vars.iter().any(|v| v.dotted == "percona.administration"));
 

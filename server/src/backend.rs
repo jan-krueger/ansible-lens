@@ -458,9 +458,8 @@ impl LanguageServer for Backend {
 /// usage whose *root* segment is unknown is flagged, and only after excluding
 /// dynamic/magic vars, Jinja keywords, and definitions in this very file.
 fn compute_diagnostics(content: &str, index: &VarIndex) -> Vec<Diagnostic> {
-    // Roots defined within this file — may not be in the (debounced) index yet,
-    // plus Jinja `{% for %}`/`{% set %}` scope variables that are template-local.
-    // Parse the document once, then take both views.
+    // Roots defined in this file (maybe not yet in the debounced index) plus
+    // Jinja `{% for %}`/`{% set %}` scope vars, which are template-local.
     let doc = parse_document(content);
     let mut local: HashSet<String> = HashSet::new();
     local.extend(doc.flat_vars().iter().map(|v| root_of(&v.dotted)));
@@ -680,7 +679,6 @@ fn completion_item(c: Completion, edit_range: Range) -> CompletionItem {
     }
 }
 
-/// Does this URI affect the parsed config (ansible.cfg or an inventory hosts file)?
 fn is_config_file(uri: &Url) -> bool {
     matches!(
         uri.path().rsplit('/').next(),
@@ -688,7 +686,6 @@ fn is_config_file(uri: &Url) -> bool {
     )
 }
 
-/// Is this URI an Ansible variable file (where keys are definitions)?
 fn is_vars_file(uri: &Url) -> bool {
     uri.to_file_path()
         .ok()
@@ -729,8 +726,6 @@ fn render_table(target: &str, defs: &[Definition], config: &AnsibleConfig) -> St
     out
 }
 
-/// Inventory column label: a real inventory by name, `playbook` for
-/// playbook-adjacent group_vars, or `—` for inventory-agnostic sources.
 fn inventory_label(d: &Definition, config: &AnsibleConfig) -> String {
     match &d.inventory {
         Some(name) if config.inventory(name).is_some() => format!("`{name}`"),
@@ -739,7 +734,6 @@ fn inventory_label(d: &Definition, config: &AnsibleConfig) -> String {
     }
 }
 
-/// The value as a clickable link to its defining file and line.
 fn value_link(d: &Definition) -> String {
     let line = d.range.start.line + 1; // 1-based for the `#L` anchor
     format!("[{}]({}#L{line})", value_display(d), d.uri)
@@ -751,7 +745,6 @@ fn md_cell(s: &str) -> String {
     s.replace('|', "\u{2502}")
 }
 
-/// A best-effort value type for the header badge.
 fn value_type(defs: &[Definition]) -> &'static str {
     let v = defs.iter().find_map(|d| d.value.as_deref());
     match v {
@@ -904,7 +897,6 @@ fn host_context(uri: &Url) -> Option<(String, String)> {
     Some((inventory, host))
 }
 
-/// Collapse runs of whitespace (incl. newlines) to single spaces.
 fn collapse_ws(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }

@@ -33,7 +33,6 @@ pub struct Definition {
     pub value: Option<String>,
 }
 
-/// One trie node: a path segment, the defs ending here, and child segments.
 #[derive(Default)]
 struct DefNode {
     children: BTreeMap<String, DefNode>,
@@ -276,7 +275,6 @@ impl VarIndex {
     }
 }
 
-/// A completion candidate (one path segment).
 pub struct Completion {
     pub segment: String,
     pub full_path: String,
@@ -285,7 +283,6 @@ pub struct Completion {
     pub sources: Vec<VarSource>,
 }
 
-/// Insert a definition at `dotted`, creating intermediate nodes as needed.
 fn insert_def(tree: &mut DefNode, dotted: &str, def: Definition) {
     let mut node = tree;
     for seg in dotted.split('.') {
@@ -328,7 +325,6 @@ fn glob_collect(node: &DefNode, pattern: &[GlobSeg], out: &mut Vec<Definition>) 
     }
 }
 
-/// Count nodes that hold at least one definition (distinct defined paths).
 fn count_keys(node: &DefNode) -> usize {
     let here = usize::from(!node.defs.is_empty());
     here + node.children.values().map(count_keys).sum::<usize>()

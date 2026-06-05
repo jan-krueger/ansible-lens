@@ -233,7 +233,6 @@ pub fn jinja_scope_vars(content: &str) -> Vec<String> {
     out
 }
 
-/// Push identifier-looking tokens from `text` (splitting on non-ident chars).
 fn push_idents(text: &str, out: &mut Vec<String>) {
     for tok in text.split(|c: char| !c.is_alphanumeric() && c != '_') {
         if tok.chars().next().is_some_and(is_ident_start) {
@@ -450,7 +449,6 @@ fn take_ident(chars: &[char], mut i: usize) -> (String, usize) {
     (chars[start..i].iter().collect(), i)
 }
 
-/// If `s` is a single- or double-quoted string literal, return its contents.
 fn unquote(s: &str) -> Option<String> {
     let bytes = s.as_bytes();
     if bytes.len() >= 2
