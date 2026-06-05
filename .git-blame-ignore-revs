@@ -1,0 +1,6 @@
+# Mechanical reformatting commits — skip them in `git blame`.
+# Activated by `make git-setup` (sets blame.ignoreRevsFile), or manually:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# refactor: apply rustfmt
+6350e8eb2c0f87b349e969564082fd5fb27f44d1

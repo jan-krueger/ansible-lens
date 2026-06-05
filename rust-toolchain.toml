@@ -1,0 +1,8 @@
+# Pin the toolchain so rustfmt/clippy behave identically for every contributor
+# and in CI. rustup auto-installs this version, its components, and the wasm
+# target (for the Zed extension) on the first cargo invocation in this repo.
+[toolchain]
+channel = "1.92.0"
+components = ["rustfmt", "clippy"]
+targets = ["wasm32-wasip1"]
+profile = "minimal"

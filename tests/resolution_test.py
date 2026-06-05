@@ -2,6 +2,7 @@
 """Host-context resolution: hovering in inv_demo/host_vars/web1 resolves
 `demo_addr` the way web1 sees it — ordered by precedence, depth-aware, with the
 other inventory's site hidden."""
+
 import json
 import os
 import subprocess
@@ -50,36 +51,82 @@ def check(name, cond):
 
 def main():
     p = subprocess.Popen([BIN], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    send(p, {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
-        "processId": os.getpid(), "rootUri": u(FIXTURES),
-        "workspaceFolders": [{"uri": u(FIXTURES), "name": "fx"}], "capabilities": {}}})
+    send(
+        p,
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "processId": os.getpid(),
+                "rootUri": u(FIXTURES),
+                "workspaceFolders": [{"uri": u(FIXTURES), "name": "fx"}],
+                "capabilities": {},
+            },
+        },
+    )
     until(p, 1)
     send(p, {"jsonrpc": "2.0", "method": "initialized", "params": {}})
     time.sleep(0.8)
 
     text = open(WEB1).read()
-    send(p, {"jsonrpc": "2.0", "method": "textDocument/didOpen", "params": {
-        "textDocument": {"uri": u(WEB1), "languageId": "yaml", "version": 1, "text": text}}})
-    send(p, {"jsonrpc": "2.0", "id": 2, "method": "textDocument/hover", "params": {
-        "textDocument": {"uri": u(WEB1)}, "position": {"line": 0, "character": 3}}})
+    send(
+        p,
+        {
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": u(WEB1),
+                    "languageId": "yaml",
+                    "version": 1,
+                    "text": text,
+                }
+            },
+        },
+    )
+    send(
+        p,
+        {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "textDocument/hover",
+            "params": {
+                "textDocument": {"uri": u(WEB1)},
+                "position": {"line": 0, "character": 3},
+            },
+        },
+    )
     md = until(p, 2)["result"]["contents"]["value"]
     print(md)
 
     ok = True
-    ok &= check("hover is host-resolved for web1 @ inv_demo",
-                "resolved for `web1` @ `inv_demo`" in md)
+    ok &= check(
+        "hover is host-resolved for web1 @ inv_demo",
+        "resolved for `web1` @ `inv_demo`" in md,
+    )
 
     def pos(s):
         return md.find(s)
 
     # precedence order: host_vars > group_vars(webservers, depth 2) > group_vars(all) > role defaults
-    order_ok = -1 < pos("host-level") < pos("web-level") < pos("all-level") < pos("role-default")
-    ok &= check("applicable sites ordered host > group(deep) > group(all) > role default", order_ok)
+    order_ok = (
+        -1
+        < pos("host-level")
+        < pos("web-level")
+        < pos("all-level")
+        < pos("role-default")
+    )
+    ok &= check(
+        "applicable sites ordered host > group(deep) > group(all) > role default",
+        order_ok,
+    )
 
-    ok &= check("other inventory's site is hidden, not listed",
-                "other-inventory" not in md and "don't apply" in md)
-    ok &= check("runtime gap is disclosed",
-                "runtime sources" in md)
+    ok &= check(
+        "other inventory's site is hidden, not listed",
+        "other-inventory" not in md and "don't apply" in md,
+    )
+    ok &= check("runtime gap is disclosed", "runtime sources" in md)
 
     send(p, {"jsonrpc": "2.0", "id": 9, "method": "shutdown", "params": None})
     until(p, 9)

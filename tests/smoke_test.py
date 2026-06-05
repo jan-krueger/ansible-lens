@@ -2,6 +2,7 @@
 """End-to-end LSP smoke test: drive the server over stdio against the fixtures
 and verify Go-to-Definition for exact paths, precedence ordering, index
 variables, and glob (post-dynamic-index) suffixes."""
+
 import json
 import os
 import subprocess
@@ -30,9 +31,11 @@ def read_message(proc):
     headers = b""
     while b"\r\n\r\n" not in headers:
         headers += proc.stdout.read(1)
-    length = int(dict(
-        line.split(b": ") for line in headers.strip().split(b"\r\n")
-    )[b"Content-Length"])
+    length = int(
+        dict(line.split(b": ") for line in headers.strip().split(b"\r\n"))[
+            b"Content-Length"
+        ]
+    )
     return json.loads(proc.stdout.read(length))
 
 
@@ -53,13 +56,18 @@ _next_id = [10]
 def definition(proc, line, character):
     _next_id[0] += 1
     rid = _next_id[0]
-    send(proc, {
-        "jsonrpc": "2.0", "id": rid, "method": "textDocument/definition",
-        "params": {
-            "textDocument": {"uri": uri(PLAYBOOK)},
-            "position": {"line": line, "character": character},
+    send(
+        proc,
+        {
+            "jsonrpc": "2.0",
+            "id": rid,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": {"uri": uri(PLAYBOOK)},
+                "position": {"line": line, "character": character},
+            },
         },
-    })
+    )
     locations = read_until_id(proc, rid)["result"] or []
     return [loc["uri"].split("/fixtures/")[-1] for loc in locations]
 
@@ -67,14 +75,19 @@ def definition(proc, line, character):
 def references(proc, path, line, character, include_decl=False):
     _next_id[0] += 1
     rid = _next_id[0]
-    send(proc, {
-        "jsonrpc": "2.0", "id": rid, "method": "textDocument/references",
-        "params": {
-            "textDocument": {"uri": uri(path)},
-            "position": {"line": line, "character": character},
-            "context": {"includeDeclaration": include_decl},
+    send(
+        proc,
+        {
+            "jsonrpc": "2.0",
+            "id": rid,
+            "method": "textDocument/references",
+            "params": {
+                "textDocument": {"uri": uri(path)},
+                "position": {"line": line, "character": character},
+                "context": {"includeDeclaration": include_decl},
+            },
         },
-    })
+    )
     locs = read_until_id(proc, rid)["result"] or []
     return sorted(
         f"{loc['uri'].split('/fixtures/')[-1]}:{loc['range']['start']['line']}"
@@ -93,15 +106,20 @@ def check(name, got, expected):
 
 def main():
     proc = subprocess.Popen([BIN], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    send(proc, {
-        "jsonrpc": "2.0", "id": 1, "method": "initialize",
-        "params": {
-            "processId": os.getpid(),
-            "rootUri": uri(FIXTURES),
-            "workspaceFolders": [{"uri": uri(FIXTURES), "name": "fixtures"}],
-            "capabilities": {},
+    send(
+        proc,
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "processId": os.getpid(),
+                "rootUri": uri(FIXTURES),
+                "workspaceFolders": [{"uri": uri(FIXTURES), "name": "fixtures"}],
+                "capabilities": {},
+            },
         },
-    })
+    )
     read_until_id(proc, 1)
     send(proc, {"jsonrpc": "2.0", "method": "initialized", "params": {}})
     time.sleep(0.6)  # let the background index build
@@ -192,13 +210,18 @@ def main():
     def completion(path, line, character):
         _next_id[0] += 1
         rid = _next_id[0]
-        send(proc, {
-            "jsonrpc": "2.0", "id": rid, "method": "textDocument/completion",
-            "params": {
-                "textDocument": {"uri": uri(path)},
-                "position": {"line": line, "character": character},
+        send(
+            proc,
+            {
+                "jsonrpc": "2.0",
+                "id": rid,
+                "method": "textDocument/completion",
+                "params": {
+                    "textDocument": {"uri": uri(path)},
+                    "position": {"line": line, "character": character},
+                },
             },
-        })
+        )
         res = read_until_id(proc, rid)["result"] or []
         items = res["items"] if isinstance(res, dict) else res
         return sorted(i["label"] for i in items)
@@ -219,16 +242,22 @@ def main():
         top_col = 'msg: "{{ '.index("{{ ") + 3
         ok &= check(
             "completion: top-level vars include percona + vault",
-            [v for v in completion(scratch, 0, top_col)
-             if v in ("percona", "vault", "cppd_environment")],
+            [
+                v
+                for v in completion(scratch, 0, top_col)
+                if v in ("percona", "vault", "cppd_environment")
+            ],
             ["cppd_environment", "percona", "vault"],
         )
         # inline-defined vars (set_fact / vars: / register) are completable
         inline = completion(scratch, 0, top_col)
         ok &= check(
             "completion: includes set_fact / vars: / register vars",
-            sorted(v for v in inline
-                   if v in ("derived_var", "derived_dict", "cmd_result", "play_level_var")),
+            sorted(
+                v
+                for v in inline
+                if v in ("derived_var", "derived_dict", "cmd_result", "play_level_var")
+            ),
             ["cmd_result", "derived_dict", "derived_var", "play_level_var"],
         )
     finally:
@@ -238,13 +267,18 @@ def main():
     def hover_md(path, line, character):
         _next_id[0] += 1
         rid = _next_id[0]
-        send(proc, {
-            "jsonrpc": "2.0", "id": rid, "method": "textDocument/hover",
-            "params": {
-                "textDocument": {"uri": uri(path)},
-                "position": {"line": line, "character": character},
+        send(
+            proc,
+            {
+                "jsonrpc": "2.0",
+                "id": rid,
+                "method": "textDocument/hover",
+                "params": {
+                    "textDocument": {"uri": uri(path)},
+                    "position": {"line": line, "character": character},
+                },
             },
-        })
+        )
         msg = read_until_id(proc, rid)
         if "error" in msg:
             print("  hover error:", msg["error"])
@@ -256,9 +290,16 @@ def main():
     md = hover_md(PLAYBOOK, pline, LINES[pline].rfind("password") + 3)
     ok &= check(
         "hover lists all 5 definition sites",
-        all(v in md for v in ["default_password", "group_all_password",
-                              "db_group_password", "host_specific_password",
-                              "role_vars_password"]),
+        all(
+            v in md
+            for v in [
+                "default_password",
+                "group_all_password",
+                "db_group_password",
+                "host_specific_password",
+                "role_vars_password",
+            ]
+        ),
         True,
     )
     ok &= check(

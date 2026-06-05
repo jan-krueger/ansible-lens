@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Verify undefined-variable diagnostics: a {{ usage }} with no definition is
 flagged, while defined vars, magic/dynamic vars, and filters are not."""
+
 import json
 import os
 import subprocess
@@ -19,7 +20,7 @@ TEXT = (
     'b: "{{ totally_undefined_xyz }}"\n'
     'c: "{{ item.name }}"\n'
     'd: "{{ ansible_hostname }}"\n'
-    'e: "{{ percona.administration.password | default(\'x\') }}"\n'
+    "e: \"{{ percona.administration.password | default('x') }}\"\n"
 )
 
 
@@ -46,23 +47,49 @@ u = lambda path: "file://" + path
 
 def main():
     p = subprocess.Popen([BIN], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    send(p, {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
-        "processId": os.getpid(), "rootUri": u(FIXTURES),
-        "workspaceFolders": [{"uri": u(FIXTURES), "name": "fx"}], "capabilities": {}}})
+    send(
+        p,
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "processId": os.getpid(),
+                "rootUri": u(FIXTURES),
+                "workspaceFolders": [{"uri": u(FIXTURES), "name": "fx"}],
+                "capabilities": {},
+            },
+        },
+    )
     while read(p).get("id") != 1:
         pass
     send(p, {"jsonrpc": "2.0", "method": "initialized", "params": {}})
     time.sleep(0.6)
 
-    send(p, {"jsonrpc": "2.0", "method": "textDocument/didOpen", "params": {
-        "textDocument": {"uri": u(DOC), "languageId": "yaml", "version": 1, "text": TEXT}}})
+    send(
+        p,
+        {
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": u(DOC),
+                    "languageId": "yaml",
+                    "version": 1,
+                    "text": TEXT,
+                }
+            },
+        },
+    )
 
     # wait for the publishDiagnostics notification for our document
     diags = None
     deadline = 0
     while diags is None and deadline < 200:
         m = read(p)
-        if m.get("method") == "textDocument/publishDiagnostics" and m["params"]["uri"] == u(DOC):
+        if m.get("method") == "textDocument/publishDiagnostics" and m["params"][
+            "uri"
+        ] == u(DOC):
             diags = m["params"]["diagnostics"]
         deadline += 1
 
@@ -73,12 +100,18 @@ def main():
         print(f"  line {ln}: {msg}")
 
     ok &= _check("exactly one diagnostic", len(diags or []) == 1)
-    ok &= _check("flag is on line 1 (the undefined var)",
-                 bool(diags) and diags[0]["range"]["start"]["line"] == 1)
-    ok &= _check("message names the undefined root",
-                 bool(diags) and "totally_undefined_xyz" in diags[0]["message"])
-    ok &= _check("defined / magic / filter vars are NOT flagged",
-                 all("totally_undefined_xyz" in d["message"] for d in (diags or [])))
+    ok &= _check(
+        "flag is on line 1 (the undefined var)",
+        bool(diags) and diags[0]["range"]["start"]["line"] == 1,
+    )
+    ok &= _check(
+        "message names the undefined root",
+        bool(diags) and "totally_undefined_xyz" in diags[0]["message"],
+    )
+    ok &= _check(
+        "defined / magic / filter vars are NOT flagged",
+        all("totally_undefined_xyz" in d["message"] for d in (diags or [])),
+    )
 
     send(p, {"jsonrpc": "2.0", "id": 9, "method": "shutdown", "params": None})
     while read(p).get("id") != 9:
