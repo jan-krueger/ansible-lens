@@ -1,0 +1,8 @@
+- name: derive a value
+  set_fact:
+    derived_var: "computed"
+    derived_dict:
+      inner: 1
+- name: capture output
+  command: echo hi
+  register: cmd_result

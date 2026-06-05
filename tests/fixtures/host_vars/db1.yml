@@ -1,0 +1,3 @@
+percona:
+  administration:
+    password: "host_specific_password"

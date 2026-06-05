@@ -1,0 +1,5 @@
+percona:
+  administration:
+    password: "default_password"
+    username: "admin"
+  port: 3306

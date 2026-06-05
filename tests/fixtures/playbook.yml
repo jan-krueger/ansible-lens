@@ -1,0 +1,8 @@
+- hosts: db_servers
+  tasks:
+    - name: show password
+      debug:
+        msg: "{{ percona.administration.password }}"
+    - name: show console
+      debug:
+        console: "{{ vault.cppd[cppd_environment].console_api_key }}"

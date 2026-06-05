@@ -1,0 +1,5 @@
+/target
+/editors/zed/target
+/editors/zed/extension.wasm
+**/*.rs.bk
+.DS_Store

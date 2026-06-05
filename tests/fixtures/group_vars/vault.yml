@@ -1,0 +1,9 @@
+cppd_environment: "prod"
+vault:
+  cppd:
+    prod:
+      console_api_key: "prod_console_key"
+    staging:
+      console_api_key: "staging_console_key"
+    dev:
+      console_api_key: "dev_console_key"
