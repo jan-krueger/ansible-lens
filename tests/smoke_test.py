@@ -142,7 +142,7 @@ def main():
     )
 
     # console line: vault.cppd[cppd_environment].console_api_key
-    cline = next(i for i, l in enumerate(LINES) if "cppd_environment" in l)
+    cline = next(i for i, ln in enumerate(LINES) if "cppd_environment" in ln)
     text = LINES[cline]
 
     # 2. click the index variable -> resolves to its own definition
@@ -311,7 +311,7 @@ def main():
     # hover on a set_fact-defined var used in another play
     extra = os.path.join(FIXTURES, "extra_play.yml")
     elines = open(extra).read().splitlines()
-    eline = next(i for i, l in enumerate(elines) if "derived_var" in l)
+    eline = next(i for i, ln in enumerate(elines) if "derived_var" in ln)
     emd = hover_md(extra, eline, elines[eline].index("derived_var") + 3)
     ok &= check(
         "hover on set_fact var shows its source + value",

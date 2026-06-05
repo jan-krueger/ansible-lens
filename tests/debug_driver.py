@@ -2,7 +2,11 @@
 """Drive the installed server against a real workspace + file to see whether the
 *server logic* resolves a variable, independent of Zed's attachment."""
 
-import json, os, subprocess, sys, time
+import json
+import os
+import subprocess
+import sys
+import time
 
 BIN = os.path.expanduser("~/.cargo/bin/ansible-lens-lsp")
 ROOT = sys.argv[1]
@@ -25,7 +29,7 @@ def read(p):
     h = b""
     while b"\r\n\r\n" not in h:
         h += p.stdout.read(1)
-    n = int(dict(l.split(b": ") for l in h.strip().split(b"\r\n"))[b"Content-Length"])
+    n = int(dict(ln.split(b": ") for ln in h.strip().split(b"\r\n"))[b"Content-Length"])
     return json.loads(p.stdout.read(n))
 
 
@@ -38,7 +42,10 @@ def until(p, i):
             return m
 
 
-u = lambda path: "file://" + path
+def u(path):
+    return "file://" + path
+
+
 p = subprocess.Popen([BIN], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 send(
     p,
@@ -59,7 +66,7 @@ send(p, {"jsonrpc": "2.0", "method": "initialized", "params": {}})
 time.sleep(1.2)
 
 lines = open(FILE).read().splitlines()
-lineno = next(i for i, l in enumerate(lines) if LINE_SUBSTR in l)
+lineno = next(i for i, ln in enumerate(lines) if LINE_SUBSTR in ln)
 col = lines[lineno].find(NEEDLE) + len(NEEDLE) // 2
 print(
     f"querying {os.path.basename(FILE)}:{lineno} col {col}  -> '{lines[lineno].strip()}'"

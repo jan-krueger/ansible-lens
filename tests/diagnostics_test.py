@@ -38,11 +38,12 @@ def read(p):
     h = b""
     while b"\r\n\r\n" not in h:
         h += p.stdout.read(1)
-    n = int(dict(l.split(b": ") for l in h.strip().split(b"\r\n"))[b"Content-Length"])
+    n = int(dict(ln.split(b": ") for ln in h.strip().split(b"\r\n"))[b"Content-Length"])
     return json.loads(p.stdout.read(n))
 
 
-u = lambda path: "file://" + path
+def u(path):
+    return "file://" + path
 
 
 def main():
